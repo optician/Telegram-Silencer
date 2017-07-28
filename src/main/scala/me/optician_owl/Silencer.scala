@@ -1,5 +1,7 @@
 package me.optician_owl
 
+import java.time.ZonedDateTime
+
 import info.mukel.telegrambot4s.api.{ChatActions, Polling, TelegramBot}
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.models.{ChatType, Message}
@@ -30,22 +32,55 @@ object Silencer {
       // Todo is it possible to load group history
       // ToDo is it possible to request list of administrators
       // Todo add rules as some general approach
-      val react: Message => Unit = msg =>
-        if (msg.chat.`type` == ChatType.Group || msg.chat.`type` == ChatType.Supergroup) {
-          msg.from.foreach(u => stats += (u.id -> (stats.getOrElse(u.id, 0) + 1)))
+      val react: Message => Unit = {
+        case m if m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup =>
+          m.from.foreach(u => stats += (u.id -> (stats.getOrElse(u.id, 0) + 1)))
+          println(stats)
+          println(m)
+          println(m.text)
+        case msg =>
           println(stats)
           println(msg)
           println(msg.text)
-        }
+      }
 
       onCommand("/hello") { implicit msg =>
         reply("My token is SAFE!")
       }
 
-      onMessage (react)
-      onEditedMessage (react)
+      onMessage(react)
+      onEditedMessage(react)
     }
 
     SafeBot.run()
   }
 }
+
+class Strategy {
+
+  def judge(facts: Facts): Boolean =
+    Rule.codex.foldLeft(false)((acc, el) => acc || el(facts))
+
+}
+
+trait Rule {
+  def apply(facts: Facts): Boolean
+}
+
+object NoviceAndSpammer extends Rule {
+  override def apply(facts: Facts): Boolean =
+    facts.evidences.nonEmpty &&
+    facts.userStats.amountOfMessagesInChat <= 10 &&
+    facts.userStats.firstAppearanceInChat.isAfter(ZonedDateTime.now().minusMonths(1))
+}
+
+object Rule {
+  val codex: List[Rule] = List(NoviceAndSpammer)
+}
+
+case class Facts(userStats: UserStats, evidences: List[Evidence])
+
+// ToDo add global statistics
+case class UserStats(firstAppearanceInChat: ZonedDateTime, amountOfMessagesInChat: Int)
+
+trait Evidence
