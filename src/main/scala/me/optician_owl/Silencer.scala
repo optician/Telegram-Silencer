@@ -56,11 +56,26 @@ object Silencer {
   }
 }
 
-class Strategy {
+object BorderGuard {
+  def validate(msg: String, chat: Long, user: Long) = {
+    searchEvidences andThen fileFactsAndStats andThen judge andThen react
+  }
 
-  def judge(facts: Facts): Boolean =
-    Rule.codex.foldLeft(false)((acc, el) => acc || el(facts))
+  val judge: Facts => Boolean =
+    facts => Rule.codex.foldLeft(false)((acc, el) => acc || el(facts))
 
+  // Todo distinguish user and channel
+  // Todo match telegram link via regex
+  // Todo match domains by domain lists
+  val searchEvidences: String => List[Evidence] = msg =>
+    msg.split("\\s").collect{
+      case x if x.startsWith("@") => TelegramLink
+      case x if x.startsWith("http://") || x.startsWith("https://") => OuterLink
+    }.toList
+
+  val fileFactsAndStats = ???
+
+  val react = ???
 }
 
 trait Rule {
@@ -102,7 +117,6 @@ object Spam extends Offence
 
 trait Evidence
 object OuterLink extends Evidence
-// Todo distinguish user and channel
 object TelegramLink extends Evidence
 
 case class GuiltRecord()

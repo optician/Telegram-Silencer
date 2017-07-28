@@ -1,7 +1,8 @@
 lazy val silencer = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(libraryDependencies ++= Seq("info.mukel" %% "telegrambot4s" % "3.0.1") ++ utilDeps)
+  .settings(libraryDependencies ++= Seq("info.mukel"    %% "telegrambot4s" % "3.0.1",
+                                        "org.typelevel" %% "cats"          % "0.9.0") ++ utilDeps)
 
 def commonSettings =
   Seq(name := "TelegramSilencer",
