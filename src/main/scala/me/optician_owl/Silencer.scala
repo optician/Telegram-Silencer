@@ -68,19 +68,42 @@ trait Rule {
 }
 
 object NoviceAndSpammer extends Rule {
-  override def apply(facts: Facts): Boolean =
+  override def apply(facts: Facts): Boolean = {
+    // Danger place
+    // ToDo check existence of stats
+    val chatStats = facts.userStats.chatStats(facts.chat)
+
     facts.evidences.nonEmpty &&
-    facts.userStats.amountOfMessagesInChat <= 10 &&
-    facts.userStats.firstAppearanceInChat.isAfter(ZonedDateTime.now().minusMonths(1))
+    chatStats.amountOfMessages <= 10 &&
+    chatStats.firstAppearance.isAfter(ZonedDateTime.now().minusMonths(1))
+  }
 }
 
 object Rule {
   val codex: List[Rule] = List(NoviceAndSpammer)
 }
 
-case class Facts(userStats: UserStats, evidences: List[Evidence])
+case class Facts(userStats: UserStats, evidences: List[Evidence], chat: Long)
 
-// ToDo add global statistics
-case class UserStats(firstAppearanceInChat: ZonedDateTime, amountOfMessagesInChat: Int)
+case class UserStats(
+    firstAppearance: ZonedDateTime,
+    amountOfMessages: Int,
+    offences: Map[Offence, Int],
+    chatStats: Map[Long, UserChatStats])
+
+case class UserChatStats(
+    chat: Long,
+    firstAppearance: ZonedDateTime,
+    amountOfMessages: Int,
+    offences: Map[Offence, Int])
+
+trait Offence
+object Spam extends Offence
 
 trait Evidence
+object OuterLink extends Evidence
+// Todo distinguish user and channel
+object TelegramLink extends Evidence
+
+case class GuiltRecord()
+case class GuiltJournal(journal: List[GuiltRecord])
