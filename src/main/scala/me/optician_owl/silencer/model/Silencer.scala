@@ -1,30 +1,30 @@
-package me.optician_owl
+package me.optician_owl.silencer.model
 
 import java.time.ZonedDateTime
 
-import info.mukel.telegrambot4s.api.{ChatActions, Polling, TelegramBot}
+import cats.data.State
+import cats.kernel.Monoid
+import cats.syntax.applicative._
 import info.mukel.telegrambot4s.api.declarative.Commands
+import info.mukel.telegrambot4s.api.{ChatActions, Polling, TelegramBot}
 import info.mukel.telegrambot4s.models.{ChatType, Message}
+import me.optician_owl.silencer.model.BorderGuard.Chat
 
 import scala.collection.mutable
-import scala.io.Source
 
 object Silencer {
 
   // ToDo Hide key
   System.setProperty("BOT_TOKEN", "408189074:AAGtJQ7clw9eS9NES-sZxYWcA2ZTfyuULlU")
 
-  // ToDO persistence
-  private val stats: mutable.Map[Int, Int] = mutable.Map()
-
   def main(args: Array[String]): Unit = {
     object SafeBot extends TelegramBot with Polling with Commands with ChatActions {
       // Use 'def' or 'lazy val' for the token, using a plain 'val' may/will
       // lead to initialization order issues.
       // Fetch the token from an environment variable or untracked file.
-//      lazy val token = scala.util.Properties
-//                       .envOrNone("BOT_TOKEN")
-//                       .getOrElse(Source.fromFile("bot.token").getLines().mkString)
+      //      lazy val token = scala.util.Properties
+      //                       .envOrNone("BOT_TOKEN")
+      //                       .getOrElse(Source.fromFile("bot.token").getLines().mkString)
 
       lazy val token = "408189074:AAGtJQ7clw9eS9NES-sZxYWcA2ZTfyuULlU"
 
@@ -57,25 +57,49 @@ object Silencer {
 }
 
 object BorderGuard {
-  def validate(msg: String, chat: Long, user: Long) = {
-    searchEvidences andThen fileFactsAndStats andThen judge andThen react
-  }
 
-  val judge: Facts => Boolean =
-    facts => Rule.codex.foldLeft(false)((acc, el) => acc || el(facts))
+  // ToDO persistence
+  private val stats: mutable.Map[Long, UserStats] =
+    mutable.Map().withDefault(_ => Monoid[UserStats].empty)
+
+  case class Chat(id: Long) extends AnyVal
+
+  case class User(id: Long) extends AnyVal
+
+  type InquiryS[A] = State[UserStats, A]
+
+  val validate: (UserStats, String, Chat, User) => InquiryS[Unit] =
+    (history, msg, chat, user) => {
+      for {
+        _       <- ().pure[InquiryS].modify(_.newMsg(chat))
+        evs     <- searchEvidences(msg)
+        verdict <- judge(Facts(history, evs, chat))
+      } yield if (verdict) react() else ()
+    }
+
+  def judge(facts: Facts): InquiryS[Boolean] =
+    Rule.codex
+      .foldLeft(false)((acc, el) => acc || el(facts))
+      .pure[InquiryS]
+      .modify(_.newGuilt(facts.chat, ???))
 
   // Todo distinguish user and channel
   // Todo match telegram link via regex
   // Todo match domains by domain lists
-  val searchEvidences: String => List[Evidence] = msg =>
-    msg.split("\\s").collect{
-      case x if x.startsWith("@") => TelegramLink
-      case x if x.startsWith("http://") || x.startsWith("https://") => OuterLink
-    }.toList
+  def searchEvidences(msg: String): InquiryS[List[Evidence]] = {
+    val xs: List[Evidence] =
+      msg
+        .split("\\s")
+        .collect {
+          case x if x.startsWith("@")                                   => TelegramLink
+          case x if x.startsWith("http://") || x.startsWith("https://") => OuterLink
+        }
+        .toList
 
-  val fileFactsAndStats = ???
+    xs.pure[InquiryS]
+  }
 
-  val react = ???
+  def react(): Unit = ???
 }
 
 trait Rule {
@@ -98,26 +122,18 @@ object Rule {
   val codex: List[Rule] = List(NoviceAndSpammer)
 }
 
-case class Facts(userStats: UserStats, evidences: List[Evidence], chat: Long)
+case class Facts(userStats: UserStats, evidences: List[Evidence], chat: Chat)
 
-case class UserStats(
-    firstAppearance: ZonedDateTime,
-    amountOfMessages: Int,
-    offences: Map[Offence, Int],
-    chatStats: Map[Long, UserChatStats])
+sealed trait Infringement
 
-case class UserChatStats(
-    chat: Long,
-    firstAppearance: ZonedDateTime,
-    amountOfMessages: Int,
-    offences: Map[Offence, Int])
+object Spam extends Infringement
 
-trait Offence
-object Spam extends Offence
+sealed trait Evidence
 
-trait Evidence
 object OuterLink extends Evidence
+
 object TelegramLink extends Evidence
 
 case class GuiltRecord()
+
 case class GuiltJournal(journal: List[GuiltRecord])
