@@ -5,19 +5,19 @@ import java.time.ZonedDateTime
 import cats.Monoid
 import cats.syntax.semigroup._
 import cats.instances.all._
-import me.optician_owl.silencer.model.BorderGuard.Chat
+import info.mukel.telegrambot4s.models.Chat
 
 case class UserStats(
     firstAppearance: ZonedDateTime,
     amountOfMessages: Int,
-    offences: Map[Infringement, Int],
+    offences: Map[Guilt, Int],
     chatStats: Map[Long, UserChatStats] = Map.empty.withDefault(_ => Monoid[UserChatStats].empty)) {
 
   def newMsg(chat: Chat): UserStats =
     this.copy(amountOfMessages = amountOfMessages + 1,
               chatStats = chatStats + (chat.id -> chatStats(chat.id).newMsg))
 
-  def newGuilt(chat: Chat, xs: Seq[Infringement]): UserStats = this.copy(
+  def newGuilt(chat: Chat, xs: Seq[Guilt]): UserStats = this.copy(
     offences = offences ++ xs.map(_ -> 1),
     chatStats = chatStats + (chat.id -> chatStats(chat.id).newGuilt(xs))
   )

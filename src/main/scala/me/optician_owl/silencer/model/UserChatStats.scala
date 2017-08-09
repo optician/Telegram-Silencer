@@ -9,9 +9,9 @@ import cats.syntax.semigroup._
 case class UserChatStats(
     firstAppearance: ZonedDateTime,
     amountOfMessages: Int,
-    offences: Map[Infringement, Int]) {
+    offences: Map[Guilt, Int]) {
 
-  def newGuilt(xs: Seq[Infringement]): UserChatStats = this.copy(offences = offences ++ xs.map(_ -> 1))
+  def newGuilt(xs: Seq[Guilt]): UserChatStats = this.copy(offences = offences ++ xs.map(_ -> 1))
 
   def newMsg: UserChatStats = this.copy(amountOfMessages = amountOfMessages + 1)
 }
