@@ -16,8 +16,7 @@ import info.mukel.telegrambot4s.methods.SendMessage
 import info.mukel.telegrambot4s.models.{Chat, ChatType, Message, User}
 
 import scala.collection.mutable
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 object Silencer {
 
@@ -29,6 +28,8 @@ object Silencer {
 
 class BorderGuard(telegramService: BotBase) extends StrictLogging {
 
+  implicit val ex = scala.concurrent.ExecutionContext.Implicits.global
+
   // ToDO persistence and thread-safe
   private val stats: mutable.Map[Long, UserStats] =
     mutable.Map().withDefault(_ => Monoid[UserStats].empty)
@@ -38,19 +39,48 @@ class BorderGuard(telegramService: BotBase) extends StrictLogging {
   type Logger[A]       = Writer[Vector[String], A]
   type FutureWriter[A] = WriterT[Future, Vector[String], A]
 
-  val validate: (UserStats, Message, Chat, User) => InquiryS[Unit] =
+  def papersPlz(user: User, msg: Message): (UserStats, Future[Unit]) =
+    validate(stats(user.id.toLong), msg, msg.chat, user).run(stats(user.id.toLong)).value
+
+  val validate: (UserStats, Message, Chat, User) => InquiryS[Future[Unit]] =
     (history, msg, chat, user) => {
+
+//      val (s, a) = searchEvidences(msg).modify(_.newMsg(chat)).run(history).value
+//      logger.info(s"State: $s; Value: $a")
+
       for {
-        evs     <- searchEvidences(msg).modify(_.newMsg(chat))
+        evs <- searchEvidences(msg).modify(_.newMsg(chat))
+        a = println(evs)
         verdict <- judge(Facts(history, evs, chat))
-      } yield if (verdict == Innocent) react(chat, msg.messageId) else Future.unit
+      } yield {
+        logger.info("~~" + verdict.toString)
+        if (verdict != Innocent) react(chat, msg.messageId) else Future.unit
+      }
     }
 
-  def judge(facts: Facts): InquiryS[Verdict] =
+  def judge(facts: Facts): InquiryS[Verdict] = {
+
+    logger.info(facts.toString)
+    val r = Rule.codex.map(_.apply(facts))
+    logger.info(Rule.codex.size.toString)
+    logger.info(r.size.toString)
+    logger.info(r.toString())
+
     Rule.codex
-    .foldLeft(Innocent: Verdict)((acc, el) => acc |+| el(facts))
-    .pure[InquiryS]
-    .flatMap(guilts => .newGuilt(facts.chat, ???))
+      .foldLeft(Innocent: Verdict) { (acc, el) =>
+        logger.info(s"$acc <-> ${el(facts)}; $facts")
+        acc |+| el(facts)
+      }
+      .pure[InquiryS]
+      .flatMap {
+        case Innocent =>
+          logger.info("innocent")
+          Innocent.pure[InquiryS].asInstanceOf[InquiryS[Verdict]]
+        case x @ Infringement(xs) =>
+          logger.info(xs.toString())
+          x.pure[InquiryS].modify(_.newGuilt(facts.chat, xs.toList)).asInstanceOf[InquiryS[Verdict]]
+      }
+  }
 
   // Todo distinguish user and channel
   // Todo match telegram link via regex
@@ -65,21 +95,27 @@ class BorderGuard(telegramService: BotBase) extends StrictLogging {
           case x if x.startsWith("http://") || x.startsWith("https://") => OuterLink
         }
         .toList
-
-    xs.pure[InquiryS]
+    logger.info(xs.toString)
+    State((_, xs))
   }
 
-  def react(chat: Chat, msgId: Long): Future[Unit] =
-    (for {
-      _ <- WriterT(attemptToDeleteMsg.map(_.run))
-      _ <- WriterT(notifyCourt(chat, msgId).map(_.run))
-    } yield ()).run.map { x =>
-      logger.info(x._1.mkString(";"))
-      x._2
+  def react(chat: Chat, msgId: Long): Future[Unit] = {
+    logger.info(s"Do something")
+    val eventualTuple  = attemptToDeleteMsg.map(_.run)
+    val eventualTuple1 = notifyCourt(chat, msgId).map(_.run)
+    (
+      for {
+        _ <- WriterT(eventualTuple)
+        _ <- WriterT(eventualTuple1)
+      } yield ()
+    ).written.map { x =>
+      logger.info(x.mkString(";"))
     }
+  }
 
   def attemptToDeleteMsg: Future[Logger[Unit]] = {
     // ToDo implement
+    logger.info(s"Trying to delete msg (not implemented.")
     Future.successful(().pure[Logger])
   }
 
@@ -87,7 +123,7 @@ class BorderGuard(telegramService: BotBase) extends StrictLogging {
     // ToDo get admin list
     // ToDo if possible then send msg to personal chat
     val msg = SendMessage(chat.id, "@optician_owl clean time", replyToMessageId = Some(msgId))
-
+    logger.info(s"send msg to admins $msg")
     telegramService
       .request(msg)
       .map(x => Vector(x.toString).tell)
@@ -105,6 +141,8 @@ class SafeBot extends TelegramBot with Polling with Commands with ChatActions {
   //                       .envOrNone("BOT_TOKEN")
   //                       .getOrElse(Source.fromFile("bot.token").getLines().mkString)
 
+  val bg = new BorderGuard(this)
+
   // ToDo Hide key
   lazy val token = "408189074:AAGtJQ7clw9eS9NES-sZxYWcA2ZTfyuULlU"
 
@@ -113,9 +151,10 @@ class SafeBot extends TelegramBot with Polling with Commands with ChatActions {
   // ToDo is it possible to request list of administrators
   // Todo add rules as some general approach
   val react: Message => Unit = {
-    case m if m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup =>
-      println(m)
-      println(m.text)
+    case m
+        if m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup && m.from.isDefined =>
+      val (s, a) = bg.papersPlz(m.from.get, m)
+      a.foreach(_ => logger.info(s"Judgement finished. User stat - $s"))
     case msg =>
       println(msg)
       println(msg.text)
@@ -134,10 +173,13 @@ trait Rule {
 }
 
 object NoviceAndSpammer extends Rule {
+
+  val userChatStatsMonoid: Monoid[UserChatStats] = Monoid[UserChatStats]
+
   override def apply(facts: Facts): Verdict = {
     // Danger place
     // ToDo check existence of stats
-    val chatStats = facts.userStats.chatStats(facts.chat.id)
+    val chatStats = facts.userStats.chatStats.getOrElse(facts.chat.id, userChatStatsMonoid.empty)
 
     if (facts.evidences.nonEmpty &&
         chatStats.amountOfMessages <= 10 &&

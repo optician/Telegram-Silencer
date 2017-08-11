@@ -11,11 +11,14 @@ case class UserStats(
     firstAppearance: ZonedDateTime,
     amountOfMessages: Int,
     offences: Map[Guilt, Int],
-    chatStats: Map[Long, UserChatStats] = Map.empty.withDefault(_ => Monoid[UserChatStats].empty)) {
+    chatStats: Map[Long, UserChatStats] = Map.empty) {
 
-  def newMsg(chat: Chat): UserStats =
-    this.copy(amountOfMessages = amountOfMessages + 1,
-              chatStats = chatStats + (chat.id -> chatStats(chat.id).newMsg))
+  def newMsg(chat: Chat): UserStats = {
+      println(s"~~> $chat")
+      println(s"~~> $this")
+      this.copy(amountOfMessages = amountOfMessages + 1,
+        chatStats = chatStats + (chat.id -> chatStats.getOrElse(chat.id, Monoid[UserChatStats].empty).newMsg))
+    }
 
   def newGuilt(chat: Chat, xs: Seq[Guilt]): UserStats = this.copy(
     offences = offences ++ xs.map(_ -> 1),

@@ -4,8 +4,8 @@ import cats.data.NonEmptyList
 import cats.kernel.Monoid
 
 sealed trait Verdict
+case class Infringement(xs: NonEmptyList[Guilt]) extends Verdict
 object Innocent extends Verdict
-final case class Infringement(xs: NonEmptyList[Guilt]) extends Verdict
 
 object Verdict {
   implicit val verdictMonoid: Monoid[Verdict] = new Monoid[Verdict] {
