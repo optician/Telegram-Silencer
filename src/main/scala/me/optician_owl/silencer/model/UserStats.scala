@@ -14,8 +14,6 @@ case class UserStats(
     chatStats: Map[Long, UserChatStats] = Map.empty) {
 
   def newMsg(chat: Chat): UserStats = {
-      println(s"~~> $chat")
-      println(s"~~> $this")
       this.copy(amountOfMessages = amountOfMessages + 1,
         chatStats = chatStats + (chat.id -> chatStats.getOrElse(chat.id, Monoid[UserChatStats].empty).newMsg))
     }

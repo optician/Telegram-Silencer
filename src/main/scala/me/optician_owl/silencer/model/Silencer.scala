@@ -12,8 +12,8 @@ import cats.syntax.writer._
 import com.typesafe.scalalogging.StrictLogging
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.api.{BotBase, ChatActions, Polling, TelegramBot}
-import info.mukel.telegrambot4s.methods.SendMessage
-import info.mukel.telegrambot4s.models.{Chat, ChatType, Message, User}
+import info.mukel.telegrambot4s.methods.{GetChatAdministrators, SendMessage}
+import info.mukel.telegrambot4s.models._
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,28 +43,18 @@ class BorderGuard(telegramService: BotBase) extends StrictLogging {
     validate(stats(user.id.toLong), msg, msg.chat, user).run(stats(user.id.toLong)).value
 
   val validate: (UserStats, Message, Chat, User) => InquiryS[Future[Unit]] =
-    (history, msg, chat, user) => {
-
-//      val (s, a) = searchEvidences(msg).modify(_.newMsg(chat)).run(history).value
-//      logger.info(s"State: $s; Value: $a")
-
+    (history, msg, chat, user) =>
       for {
         evs <- searchEvidences(msg).modify(_.newMsg(chat))
         a = println(evs)
         verdict <- judge(Facts(history, evs, chat))
       } yield {
-        logger.info("~~" + verdict.toString)
         if (verdict != Innocent) react(chat, msg.messageId) else Future.unit
-      }
     }
 
   def judge(facts: Facts): InquiryS[Verdict] = {
 
-    logger.info(facts.toString)
     val r = Rule.codex.map(_.apply(facts))
-    logger.info(Rule.codex.size.toString)
-    logger.info(r.size.toString)
-    logger.info(r.toString())
 
     Rule.codex
       .foldLeft(Innocent: Verdict) { (acc, el) =>
@@ -100,7 +90,6 @@ class BorderGuard(telegramService: BotBase) extends StrictLogging {
   }
 
   def react(chat: Chat, msgId: Long): Future[Unit] = {
-    logger.info(s"Do something")
     val eventualTuple  = attemptToDeleteMsg.map(_.run)
     val eventualTuple1 = notifyCourt(chat, msgId).map(_.run)
     (
@@ -115,21 +104,26 @@ class BorderGuard(telegramService: BotBase) extends StrictLogging {
 
   def attemptToDeleteMsg: Future[Logger[Unit]] = {
     // ToDo implement
-    logger.info(s"Trying to delete msg (not implemented.")
     Future.successful(().pure[Logger])
   }
 
   def notifyCourt(chat: Chat, msgId: Long): Future[Logger[Unit]] = {
-    // ToDo get admin list
+
+    def msg(admins: Seq[String]) =
+      SendMessage(chat.id,
+                  admins.map("@" + _).mkString(" ") + " clean time",
+                  replyToMessageId = Some(msgId))
+
     // ToDo if possible then send msg to personal chat
-    val msg = SendMessage(chat.id, "@optician_owl clean time", replyToMessageId = Some(msgId))
-    logger.info(s"send msg to admins $msg")
-    telegramService
-      .request(msg)
-      .map(x => Vector(x.toString).tell)
-      .recover {
-        case err: Exception => Vector(err.getLocalizedMessage).tell
-      }
+    (for {
+      admins <- telegramService.request(GetChatAdministrators(chat.id))
+      alarm  <- telegramService.request(msg(admins.flatMap(_.user.username)))
+    } yield {
+      logger.info(admins.toString)
+      Vector(alarm.toString).tell
+    }).recover {
+      case err: Exception => Vector(err.getLocalizedMessage).tell
+    }
   }
 }
 
@@ -154,6 +148,8 @@ class SafeBot extends TelegramBot with Polling with Commands with ChatActions {
     case m
         if m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup && m.from.isDefined =>
       val (s, a) = bg.papersPlz(m.from.get, m)
+      logger.info(s"message: ${m.text.map(x => new String(x.getBytes("UTF-8"), "UTF-8"))}")
+      logger.info(s"message: $m")
       a.foreach(_ => logger.info(s"Judgement finished. User stat - $s"))
     case msg =>
       println(msg)
@@ -198,7 +194,3 @@ case class Facts(userStats: UserStats, evidences: List[Evidence], chat: Chat)
 sealed trait Evidence
 object OuterLink    extends Evidence
 object TelegramLink extends Evidence
-
-//case class GuiltRecord()
-//
-//case class GuiltJournal(journal: List[GuiltRecord])
