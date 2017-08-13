@@ -3,9 +3,19 @@ package me.optician_owl.silencer.model
 import cats.data.NonEmptyList
 import cats.kernel.Monoid
 
-sealed trait Verdict
-case class Infringement(xs: NonEmptyList[Guilt]) extends Verdict
-object Innocent extends Verdict
+sealed trait Verdict {
+  def isInnocent: Boolean
+}
+case class Infringement(xs: NonEmptyList[Guilt]) extends Verdict {
+  override val isInnocent = false
+
+  override def toString: String = s"guilt for ${xs.toList.mkString(",")}"
+}
+object Innocent extends Verdict {
+  override val isInnocent = true
+
+  override def toString: String = "innocent"
+}
 
 object Verdict {
   implicit val verdictMonoid: Monoid[Verdict] = new Monoid[Verdict] {
