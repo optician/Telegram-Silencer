@@ -19,7 +19,7 @@ case class UserStats(
     }
 
   def newGuilt(chat: Chat, xs: Seq[Guilt]): UserStats = this.copy(
-    offences = offences ++ xs.map(_ -> 1),
+    offences = offences ++ xs.map(k => k -> (offences.getOrElse(k, 0) + 1)),
     chatStats = chatStats + (chat.id -> chatStats(chat.id).newGuilt(xs))
   )
 }
