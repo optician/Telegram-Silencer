@@ -30,4 +30,6 @@ object Verdict {
 }
 
 sealed trait Guilt
-object Spam extends Guilt
+case object Spam extends Guilt {
+  override def toString: String = "Spam"
+}

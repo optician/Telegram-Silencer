@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+package me.optician_owl.protobuf;
+
+message UserStatsScheme {
+    required ZonedDateTime firstAppearance = 1;
+    required int32 amountOfMessages = 2;
+    repeated GuiltPair offences = 3;
+    map<int64, UserChatStatsScheme> chatStats = 4;
+}
+
+message UserChatStatsScheme {
+    required ZonedDateTime firstAppearance = 1;
+    required int32 amountOfMessages = 2;
+    repeated GuiltPair offences = 3;
+}
+
+message GuiltPair {
+    required Guilt guilt = 1;
+    required int32 amount = 2;
+}
+
+message ZonedDateTime {
+    required int64 timestamp = 1;
+    required string zone = 2;
+}
+
+enum Guilt {
+    SPAM = 0;
+}

@@ -13,7 +13,17 @@ val utilDeps = Seq(
 lazy val silencer = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(libraryDependencies ++= Seq("info.mukel" %% "telegrambot4s" % "3.0.6") ++ catsDeps ++ utilDeps)
+  .settings(fork := true)
+  .settings(libraryDependencies ++= Seq(
+    "info.mukel"    %% "telegrambot4s"      % "3.0.8",
+    "net.openhft"   % "chronicle-map"       % "3.14.1",
+    "com.twitter"   %% "bijection-protobuf" % "0.9.5",
+    "org.scalatest" %% "scalatest"          % "3.0.4" % "test"
+  ) ++ catsDeps ++ utilDeps)
+  .settings(
+    PB.targets in Compile := Seq(
+      scalapb.gen() -> (sourceManaged in Compile).value
+    ))
 
 def commonSettings =
   Seq(name := "TelegramSilencer",
