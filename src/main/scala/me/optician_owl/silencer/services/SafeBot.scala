@@ -4,6 +4,7 @@ import cats.data.ReaderWriterStateT
 import cats.instances.future._
 import cats.instances.vector._
 import cats.syntax.all._
+import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.api.{ChatActions, Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.{GetChatAdministrators, SendMessage}
@@ -113,8 +114,7 @@ class SafeBot(statsService: StatsService) extends TelegramBot with Polling with 
       } else Future.successful((Vector.empty, userStat, verdict))
     }))
 
-  // ToDo Hide key
-  lazy val token = "408189074:AAGtJQ7clw9eS9NES-sZxYWcA2ZTfyuULlU"
+  lazy val token: String = ConfigFactory.load().getString("bot-token")
 
   // Todo is it possible to load group history?
   // ToDo on new user join check his reputation

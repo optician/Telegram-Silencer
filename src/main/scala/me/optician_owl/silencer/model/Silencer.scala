@@ -10,6 +10,7 @@ object Silencer {
     safeBot.run()
   }
 }
+
 // ToDo Add soft strategy - ignore existed but unknown users before gathering minimal stat.
 // ToDo Add validation for new users - check history
 // ToDo Add method for clearing user stats - debugging purpose
