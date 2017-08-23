@@ -18,12 +18,6 @@ class SafeBot(statsService: StatsService)
     with Polling
     with Commands
     with ChatActions {
-  // Use 'def' or 'lazy val' for the token, using a plain 'val' may/will
-  // lead to initialization order issues.
-  // Fetch the token from an environment variable or untracked file.
-  //      lazy val token = scala.util.Properties
-  //                       .envOrNone("BOT_TOKEN")
-  //                       .getOrElse(Source.fromFile("bot.token").getLines().mkString)
 
   type RWS[A] = ReaderWriterStateT[Future, Message, Vector[String], UserStats, A]
 
