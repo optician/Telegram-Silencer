@@ -8,12 +8,16 @@ import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.api.{ChatActions, Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.{GetChatAdministrators, SendMessage}
-import info.mukel.telegrambot4s.models.{ChatType, Message, User}
+import info.mukel.telegrambot4s.models.{ChatType, Message, MessageEntityType, User}
 import me.optician_owl.silencer.model._
 
 import scala.concurrent.Future
 
-class SafeBot(statsService: StatsService) extends TelegramBot with Polling with Commands with ChatActions {
+class SafeBot(statsService: StatsService)
+    extends TelegramBot
+    with Polling
+    with Commands
+    with ChatActions {
   // Use 'def' or 'lazy val' for the token, using a plain 'val' may/will
   // lead to initialization order issues.
   // Fetch the token from an environment variable or untracked file.
@@ -47,23 +51,45 @@ class SafeBot(statsService: StatsService) extends TelegramBot with Polling with 
       Future.successful((Vector.empty, userStat.newMsg(msg.chat), ()))
     }))
 
-  // Todo distinguish user and channel
-  // Todo match telegram link via regex or look at message fields
-  // Todo match domains by domain lists
-  def searchEvidences: RWS[List[Evidence]] =
-    new RWS(Future.successful((msg, userStat) => {
-      val xs: List[Evidence] =
-        msg.text
-          .getOrElse("")
-          .split("\\s")
-          .collect {
-            case x if x.startsWith("@")                                   => TelegramLink
-            case x if x.startsWith("http://") || x.startsWith("https://") => OuterLink
+  def searchEvidences: RWS[List[Evidence]] = {
+
+    // Todo distinguish user and channel
+    // Todo match telegram link via regex or look at message fields
+    def telegramLinks: RWS[List[Evidence]] =
+      new RWS(
+        Future.successful(
+          (msg, userStat) => {
+            val xs: List[Evidence] =
+              msg.text
+                .getOrElse("")
+                .split("\\s")
+                .collect {
+                  case x if x.startsWith("@") => TelegramLink
+                }
+                .toList
+            Future.successful((Vector.empty, userStat, xs))
           }
-          .toList
-      val log = Vector(s"[evidences] $xs")
-      Future.successful((log, userStat, xs))
-    }))
+        )
+      )
+
+    def urlLinks: RWS[List[Evidence]] = new RWS(
+      Future.successful(
+        (msg, userStat) => {
+          val xs: List[Evidence] = msg.entities.toList.flatten.collect {
+            case ent if ent.`type` == MessageEntityType.Url => UrlLink
+          }
+          Future.successful((Vector.empty, userStat, xs))
+        }
+      )
+    )
+
+    for {
+      u <- urlLinks
+      t <- telegramLinks
+      evidences = t ++ u
+      _ <- ReaderWriterStateT.tell[Future, Message, Vector[String], UserStats](Vector(s"[evidences] $evidences"))
+    } yield evidences
+  }
 
   def judge(xs: List[Evidence]): RWS[Verdict] =
     new RWS(Future.successful((msg, userStat) => {
