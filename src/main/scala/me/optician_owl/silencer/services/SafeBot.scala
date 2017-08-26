@@ -10,6 +10,7 @@ import info.mukel.telegrambot4s.api.{ChatActions, Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.{GetChatAdministrators, SendMessage}
 import info.mukel.telegrambot4s.models.{ChatType, Message, MessageEntityType, User}
 import me.optician_owl.silencer.model._
+import me.optician_owl.silencer.utils.Utils
 
 import scala.concurrent.Future
 
@@ -79,7 +80,8 @@ class SafeBot(statsService: StatsService)
       u <- urlLinks
       t <- telegramLinks
       evidences = t ++ u
-      _ <- ReaderWriterStateT.tell[Future, Message, Vector[String], UserStats](Vector(s"[evidences] $evidences"))
+      _ <- ReaderWriterStateT.tell[Future, Message, Vector[String], UserStats](
+        Vector(s"[evidences] $evidences"))
     } yield evidences
   }
 
@@ -133,14 +135,33 @@ class SafeBot(statsService: StatsService)
 
   lazy val token: String = ConfigFactory.load().getString("bot-token")
 
-  // Todo is it possible to load group history?
   val msgProcessing: Message => Unit = {
+    // Some kind of message. Lets investigate.
     case m
-        if m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup && m.from.isDefined =>
+        if (m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup)
+          && m.from.isDefined
+          && m.newChatMembers.isEmpty =>
       papersPlz(m.from.get, m).foreach { userStats =>
-        logger.trace(s"message: ${m.text}")
         logger.trace(s"message: $m")
         logger.trace(userStats.toString)
+      }
+    // Create chat statistic for recently joined users
+    case m
+        if (m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup)
+          && m.from.isDefined
+          && m.newChatMembers.isDefined =>
+      m.newChatMembers.get.foreach { u =>
+        val time      = Utils.zonedDateTime(m.date)
+        val userStats = statsService.stats(u.id)
+        if (userStats.chatStats.get(m.chat.id).isEmpty) {
+          val chatStats = UserChatStats(time, 0, Map(), Some(time))
+          statsService.updateStats(
+            u.id,
+            userStats.copy(chatStats = userStats.chatStats + (m.chat.id -> chatStats))
+          )
+        } else {
+          // ignore rejoining to group
+        }
       }
     case msg =>
   }

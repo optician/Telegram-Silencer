@@ -1,7 +1,5 @@
 package me.optician_owl.silencer.model
 
-import java.time.ZonedDateTime
-
 import cats.data.NonEmptyList
 import cats.kernel.Monoid
 
@@ -16,9 +14,9 @@ object NoviceAndSpammer extends Rule {
   override def apply(facts: Facts): Verdict = {
     val chatStats = facts.userStats.chatStats.getOrElse(facts.chat.id, userChatStatsMonoid.empty)
 
-    if (facts.evidences.nonEmpty &&
-        chatStats.amountOfMessages <= 3 &&
-        chatStats.firstAppearance.isAfter(ZonedDateTime.now().minusMonths(1)))
+    if (chatStats.joiningDttm.isDefined
+        && facts.evidences.nonEmpty
+        && chatStats.amountOfMessages <= 3)
       Infringement(NonEmptyList(Spam, Nil))
     else Innocent
   }
