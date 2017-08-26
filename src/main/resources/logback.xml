@@ -1,6 +1,6 @@
 <configuration>
 
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>bot.log</file>
 
         <encoder>
