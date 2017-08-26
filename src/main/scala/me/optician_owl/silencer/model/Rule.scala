@@ -19,7 +19,7 @@ object NoviceAndSpammer extends Rule {
     val chatStats = facts.userStats.chatStats.getOrElse(facts.chat.id, userChatStatsMonoid.empty)
 
     if (facts.evidences.nonEmpty &&
-        chatStats.amountOfMessages <= 10 &&
+        chatStats.amountOfMessages <= 3 &&
         chatStats.firstAppearance.isAfter(ZonedDateTime.now().minusMonths(1)))
       Infringement(NonEmptyList(Spam, Nil))
     else Innocent
