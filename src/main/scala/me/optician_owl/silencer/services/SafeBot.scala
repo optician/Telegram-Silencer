@@ -47,8 +47,6 @@ class SafeBot(statsService: StatsService)
 
   def searchEvidences: RWS[List[Evidence]] = {
 
-    // Todo distinguish user and channel
-    // Todo match telegram link via regex or look at message fields
     def telegramLinks: RWS[List[Evidence]] =
       new RWS(
         Future.successful(
@@ -103,7 +101,6 @@ class SafeBot(statsService: StatsService)
     }))
 
   def punish(verdict: Verdict): RWS[Verdict] = {
-    // ToDo implement
     for {
       v <- verdict.pure[RWS].tell(Vector("punishments aren't yet implemented"))
     } yield v
@@ -137,8 +134,6 @@ class SafeBot(statsService: StatsService)
   lazy val token: String = ConfigFactory.load().getString("bot-token")
 
   // Todo is it possible to load group history?
-  // ToDo on new user join check his reputation
-  // ToDo then infringement occurs in one chat take action in others where culprit is present (it depends on violation type: spammer vs cad)
   val msgProcessing: Message => Unit = {
     case m
         if m.chat.`type` == ChatType.Group || m.chat.`type` == ChatType.Supergroup && m.from.isDefined =>
