@@ -46,12 +46,14 @@ class StatsService extends StrictLogging {
     Bijection.build { (ucs: UserChatStats) =>
       UserChatStatsScheme(ucs.firstAppearance.as[ProtoZDT],
                           ucs.amountOfMessages,
-                          ucs.offences.map(_.as[GuiltPair]).toSeq)
+                          ucs.offences.map(_.as[GuiltPair]).toSeq,
+                          ucs.joiningDttm.map(_.as[ProtoZDT]))
     } { (ucss: UserChatStatsScheme) =>
       UserChatStats(
         ucss.firstAppearance.as[ZDT],
         ucss.amountOfMessages,
-        ucss.offences.map(_.as[(Guilt, Int)]).toMap
+        ucss.offences.map(_.as[(Guilt, Int)]).toMap,
+        ucss.joiningDttm.map(_.as[ZDT])
       )
     }
 
@@ -80,11 +82,11 @@ class StatsService extends StrictLogging {
 
   private val userStatsDBBuilder: ChronicleMapBuilder[Array[Byte], Array[Byte]] =
     ChronicleMapBuilder
-    .of(classOf[Array[Byte]], classOf[Array[Byte]])
-    .name("user-statistics")
-    .entries(2e6.toInt) // Just a guess
-    .averageKey(Array.fill(8)(1.toByte))
-    .averageValue(converter(userStatsM.empty))
+      .of(classOf[Array[Byte]], classOf[Array[Byte]])
+      .name("user-statistics")
+      .entries(2e6.toInt) // Just a guess
+      .averageKey(Array.fill(8)(1.toByte))
+      .averageValue(converter(userStatsM.empty))
 
   val userStatsStore: ChronicleMap[Array[Byte], Array[Byte]] =
     userStatsDBBuilder.createPersistedTo(File(Path("db/user-stats-store.db")).jfile)

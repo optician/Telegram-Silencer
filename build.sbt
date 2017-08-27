@@ -13,7 +13,6 @@ val utilDeps = Seq(
 lazy val silencer = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(fork := true)
   .settings(libraryDependencies ++= Seq(
     "info.mukel"    %% "telegrambot4s"      % "3.0.8",
     "net.openhft"   % "chronicle-map"       % "3.14.1",

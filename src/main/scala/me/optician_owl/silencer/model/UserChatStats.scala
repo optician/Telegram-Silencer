@@ -9,7 +9,8 @@ import cats.syntax.semigroup._
 case class UserChatStats(
     firstAppearance: ZonedDateTime,
     amountOfMessages: Int,
-    offences: Map[Guilt, Int]) {
+    offences: Map[Guilt, Int],
+    joiningDttm: Option[ZonedDateTime]) {
 
   def newGuilt(xs: Seq[Guilt]): UserChatStats = this.copy(offences = offences ++ xs.map(_ -> 1))
 
@@ -19,13 +20,14 @@ case class UserChatStats(
 object UserChatStats {
 
   implicit val chatStatsMonoid: Monoid[UserChatStats] = new Monoid[UserChatStats] {
-    override def empty: UserChatStats = UserChatStats(ZonedDateTime.now, 0, Map.empty)
+    override def empty: UserChatStats = UserChatStats(ZonedDateTime.now, 0, Map.empty, None)
 
     override def combine(x: UserChatStats, y: UserChatStats): UserChatStats =
       UserChatStats(
         if (x.firstAppearance.isBefore(y.firstAppearance)) x.firstAppearance else y.firstAppearance,
         x.amountOfMessages + y.amountOfMessages,
-        x.offences |+| y.offences
+        x.offences |+| y.offences,
+        x.joiningDttm.orElse(y.joiningDttm)
       )
   }
 

@@ -13,6 +13,7 @@ message UserChatStatsScheme {
     required ZonedDateTime firstAppearance = 1;
     required int32 amountOfMessages = 2;
     repeated GuiltPair offences = 3;
+    optional ZonedDateTime joiningDttm = 4;
 }
 
 message GuiltPair {
