@@ -1,14 +1,14 @@
 package me.optician_owl.silencer.services
 
-import cats.data.ReaderWriterStateT
-import cats.instances.future._
 import cats.instances.vector._
-import cats.syntax.all._
+import cats.instances.future._
 import com.typesafe.config.ConfigFactory
 import info.mukel.telegrambot4s.api.declarative.Commands
 import info.mukel.telegrambot4s.api.{ChatActions, Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.{GetChatAdministrators, SendMessage}
-import info.mukel.telegrambot4s.models.{ChatType, Message, MessageEntityType, User}
+import info.mukel.telegrambot4s.models.{ChatType, Message, User}
+import me.optician_owl.silencer._
+import me.optician_owl.silencer.justice._
 import me.optician_owl.silencer.model._
 import me.optician_owl.silencer.utils.Utils
 
@@ -19,8 +19,6 @@ class SafeBot(statsService: StatsService)
     with Polling
     with Commands
     with ChatActions {
-
-  type RWS[A] = ReaderWriterStateT[Future, Message, Vector[String], UserStats, A]
 
   def papersPlz(user: User, msg: Message): Future[UserStats] =
     validate.run(msg, statsService.stats(user.id.toLong)).map {
@@ -35,9 +33,9 @@ class SafeBot(statsService: StatsService)
   def validate: RWS[Verdict] =
     for {
       _       <- statCounter
-      es      <- searchEvidences
-      verdict <- judge(es)
-      _       <- punish(verdict)
+      es      <- Inquiry.searchEvidences
+      verdict <- Judgement.judge(es)
+      _       <- Execution.punish(verdict)
       _       <- notifyCourt(verdict)
     } yield verdict
 
@@ -45,68 +43,6 @@ class SafeBot(statsService: StatsService)
     new RWS(Future.successful((msg, userStat) => {
       Future.successful((Vector.empty, userStat.newMsg(msg.chat), ()))
     }))
-
-  def searchEvidences: RWS[List[Evidence]] = {
-
-    def telegramLinks: RWS[List[Evidence]] =
-      new RWS(
-        Future.successful(
-          (msg, userStat) => {
-            val xs: List[Evidence] =
-              msg.text
-                .getOrElse("")
-                .split("\\s")
-                .collect {
-                  case x if x.startsWith("@") => TelegramLink
-                }
-                .toList
-            Future.successful((Vector.empty, userStat, xs))
-          }
-        )
-      )
-
-    def urlLinks: RWS[List[Evidence]] = new RWS(
-      Future.successful(
-        (msg, userStat) => {
-          val xs: List[Evidence] = msg.entities.toList.flatten.collect {
-            case ent if ent.`type` == MessageEntityType.Url => UrlLink
-          }
-          Future.successful((Vector.empty, userStat, xs))
-        }
-      )
-    )
-
-    for {
-      u <- urlLinks
-      t <- telegramLinks
-      evidences = t ++ u
-      _ <- ReaderWriterStateT.tell[Future, Message, Vector[String], UserStats](
-        Vector(s"[evidences] $evidences"))
-    } yield evidences
-  }
-
-  def judge(xs: List[Evidence]): RWS[Verdict] =
-    new RWS(Future.successful((msg, userStat) => {
-
-      val facts = Facts(userStat, xs, msg.chat)
-
-      val verdict = Rule.codex.foldLeft(Innocent: Verdict)(_ |+| _.apply(facts))
-
-      val log = Vector(s"verdict is [${verdict.toString}]")
-
-      val newStat = verdict match {
-        case Innocent         => userStat
-        case Infringement(ys) => userStat.newGuilt(msg.chat, ys.toList)
-      }
-
-      Future.successful((log, newStat, verdict))
-    }))
-
-  def punish(verdict: Verdict): RWS[Verdict] = {
-    for {
-      v <- verdict.pure[RWS].tell(Vector("punishments aren't yet implemented"))
-    } yield v
-  }
 
   def notifyCourt(verdict: Verdict): RWS[Verdict] =
     new RWS(Future.successful((msg, userStat) => {
@@ -167,7 +103,7 @@ class SafeBot(statsService: StatsService)
   }
 
   onCommand("/hello") { implicit msg =>
-    reply(s"Hello my friend!")
+    reply(s"Hello my friend! My home page is https://github.com/optician/Telegram-Silencer")
   }
 
   onMessage(msgProcessing)
