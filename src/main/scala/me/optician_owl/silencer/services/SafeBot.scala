@@ -14,7 +14,7 @@ import me.optician_owl.silencer.utils.Utils
 
 import scala.concurrent.Future
 
-class SafeBot(statsService: StatsService)
+class SafeBot(statsService: StatsService, inquiry: Inquiry)
     extends TelegramBot
     with Polling
     with Commands
@@ -33,7 +33,7 @@ class SafeBot(statsService: StatsService)
   def validate: RWS[Verdict] =
     for {
       _       <- statCounter
-      es      <- Inquiry.searchEvidences
+      es      <- inquiry.searchEvidences
       verdict <- Judgement.judge(es)
       _       <- Execution.punish(verdict)
       _       <- notifyCourt(verdict)

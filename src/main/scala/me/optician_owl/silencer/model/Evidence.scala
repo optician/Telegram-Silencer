@@ -1,11 +1,9 @@
 package me.optician_owl.silencer.model
 
-import info.mukel.telegrambot4s.models.{Chat, User}
+import info.mukel.telegrambot4s.models.Chat
 
 sealed trait Evidence
-object UrlLink extends Evidence {
-  override def toString: String = "URL Link"
-}
+case class UrlLink(link: String) extends Evidence
 
 object TelegramLink extends Evidence {
   override def toString: String = "Telegram Link"
