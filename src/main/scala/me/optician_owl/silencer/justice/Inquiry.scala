@@ -16,12 +16,11 @@ class Inquiry(chatSettingsService: ChatSettingsService) {
   implicit private val settings: ChatSettingsService = chatSettingsService
 
   def searchEvidences(implicit ex: ExecutionContext): RWS[List[Evidence]] = {
+    val procedures = List(Links(), Forwards)
     for {
-      u <- (new Links).result
-      t <- Forwards.result
-      evidences = t ++ u
-      _ <- RWST.tell[Future, Message, Vector[String], UserStats](Vector(s"[evidences] $evidences"))
-    } yield evidences
+      evs <- RWS.traverse(procedures)(_.result).map(_.flatten)
+      _   <- RWST.tell[Future, Message, Vector[String], UserStats](Vector(s"[evidences] $evs"))
+    } yield evs
   }
 }
 
@@ -33,6 +32,7 @@ trait InquiryProcedure {
 }
 
 object InquiryProcedure {
+
   /**
     *
     * @param f function from message and user statistics to list of evidences
@@ -57,7 +57,8 @@ object InquiryProcedure {
   *
   * @param chatSettingsService Storage of per chat settings
   */
-private class Links(implicit chatSettingsService: ChatSettingsService) extends InquiryProcedure {
+private case class Links()(implicit chatSettingsService: ChatSettingsService)
+    extends InquiryProcedure {
 
   private val hostRegex = """^(?:http://|https://)?(?:www\.)?([^/]++)""".r
   // Performance ololo
@@ -85,6 +86,6 @@ private class Links(implicit chatSettingsService: ChatSettingsService) extends I
   * Detection of message forwards. Forwards work like a link in telegram clients.
   */
 private object Forwards extends InquiryProcedure {
-  override def result: RWS[List[Evidence]] = InquiryProcedure.lift(
-    (msg, userStat) => msg.forwardFromChat.map(_ => TelegramLink).toList)
+  override def result: RWS[List[Evidence]] =
+    InquiryProcedure.lift((msg, userStat) => msg.forwardFromChat.map(_ => TelegramLink).toList)
 }
