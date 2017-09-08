@@ -67,17 +67,16 @@ private case class Links()(implicit chatSettingsService: ChatSettingsService)
     hostOpt.fold(false)(host => exclusionList.exists(linkEq(Host(host))))
   }
 
-  private def linkEq(host: Host)(exclusion: Host): Boolean = {
+  private def linkEq(host: Host)(exclusion: Host): Boolean =
     host == exclusion
-  }
 
   override def result: RWS[List[Evidence]] =
     InquiryProcedure.lift((msg, userStat) =>
       msg.entities.toList.flatten.collect {
         case ent if ent.`type` == MessageEntityType.Url =>
           msg.text
-            .map(x => UrlLink(x.substring(ent.offset, ent.length)))
-            .filter(filterLinks(chatSettingsService.getExclusionUrls(msg.chat.id)))
+            .map(x => UrlLink(x.substring(ent.offset, ent.offset + ent.length)))
+            .filterNot(filterLinks(chatSettingsService.getExclusionUrls(msg.chat.id)))
         case ent if ent.`type` == MessageEntityType.Mention => Some(TelegramLink)
       }.flatten)
 }

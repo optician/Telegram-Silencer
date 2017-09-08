@@ -8,7 +8,9 @@ import scala.annotation.tailrec
   * Represents host by subdomain list starting from the root domain.
   * For example ''[io,github,finch]''
   */
-class Host(val list: NonEmptyList[String]) extends AnyVal
+class Host(val list: NonEmptyList[String]) extends AnyVal {
+  override def toString: String = list.toList.mkString(".")
+}
 
 object Host {
   def apply(host: String): Host =

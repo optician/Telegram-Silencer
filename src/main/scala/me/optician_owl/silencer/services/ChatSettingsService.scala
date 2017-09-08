@@ -8,10 +8,15 @@ class ChatSettingsService extends StrictLogging {
   // ToDo Trie
   private val hardCodeWhiteList = List(
     "github.com",
+    "*.github.com",
     "*.github.io",
     "twitter.com",
     "pastebin.com",
+    "google.com",
+    "google.ru",
+    "yandex.ru",
     "habrahabr.ru",
+    "*.apache.org",
     "*.jetbrains.com",
     "jetbrains.com",
     "highloadcup.ru",
