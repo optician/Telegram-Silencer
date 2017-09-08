@@ -28,4 +28,7 @@ def commonSettings =
   Seq(name := "TelegramSilencer",
       organization := "me.optician_owl",
       version := "0.1.0",
-      scalaVersion := "2.12.3")
+      scalaVersion := "2.12.3",
+      scalacOptions ++= Seq(
+        "-deprecation"
+      ))

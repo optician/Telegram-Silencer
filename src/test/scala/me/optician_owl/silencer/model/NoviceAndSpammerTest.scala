@@ -12,7 +12,7 @@ class NoviceAndSpammerTest extends FlatSpec with Matchers {
 
   private val chatID = 1001L
 
-  val facts = Facts(_: UserStats, List(UrlLink), Chat(chatID, ChatType.Group))
+  val facts = Facts(_: UserStats, List(UrlLink("link.com")), Chat(chatID, ChatType.Group))
 
   def stats(userChatStats: UserChatStats): UserStats =
     UserStats(ZonedDateTime.now, 2, Map(), Map(chatID -> userChatStats))
