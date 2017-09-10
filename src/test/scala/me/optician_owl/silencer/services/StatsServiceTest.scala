@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import info.mukel.telegrambot4s.models.{Chat, ChatType}
 import me.optician_owl.silencer.model.{Spam, UserChatStats, UserStats}
+import me.optician_owl.silencer.services.storage.StatsService
 import org.scalatest.{FlatSpec, Matchers}
 
 class StatsServiceTest extends FlatSpec with Matchers {

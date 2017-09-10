@@ -1,4 +1,4 @@
-package me.optician_owl.silencer.services
+package me.optician_owl.silencer.services.storage
 
 import java.time.{Instant, ZoneId, ZonedDateTime => ZDT}
 
@@ -6,13 +6,7 @@ import cats._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection._
 import com.typesafe.scalalogging.StrictLogging
-import me.optician_owl.protobuf.UserStatsScheme.{
-  GuiltPair,
-  UserChatStatsScheme,
-  UserStatsScheme,
-  Guilt => ProtoGuilt,
-  ZonedDateTime => ProtoZDT
-}
+import me.optician_owl.protobuf.UserStatsScheme.{GuiltPair, UserChatStatsScheme, UserStatsScheme, Guilt => ProtoGuilt, ZonedDateTime => ProtoZDT}
 import me.optician_owl.silencer.model.{Guilt, Spam, UserChatStats, UserStats}
 import net.openhft.chronicle.map.{ChronicleMap, ChronicleMapBuilder}
 
