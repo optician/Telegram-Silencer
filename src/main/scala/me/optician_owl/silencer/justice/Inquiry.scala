@@ -6,7 +6,7 @@ import cats.instances.vector._
 import info.mukel.telegrambot4s.models.{Message, MessageEntityType}
 import me.optician_owl.silencer._
 import me.optician_owl.silencer.model._
-import me.optician_owl.silencer.services.ChatSettingsService
+import me.optician_owl.silencer.services.storage.ChatSettingsService
 import me.optician_owl.silencer.utils.Host
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,7 +15,7 @@ class Inquiry(chatSettingsService: ChatSettingsService) {
 
   implicit private val settings: ChatSettingsService = chatSettingsService
 
-  def searchEvidences(implicit ex: ExecutionContext): RWS[List[Evidence]] = {
+  def searchEvidences(implicit ex: ExecutionContext): MessageRWS[List[Evidence]] = {
     val procedures = List(Links(), Forwards)
     for {
       evs <- RWS.traverse(procedures)(_.result).map(_.flatten)
@@ -28,7 +28,7 @@ class Inquiry(chatSettingsService: ChatSettingsService) {
   * Abstraction for supposed scalability. Facilitate traverse and per chat composition of procedures.
   */
 trait InquiryProcedure {
-  def result: RWS[List[Evidence]]
+  def result: MessageRWS[List[Evidence]]
 }
 
 object InquiryProcedure {
@@ -38,8 +38,8 @@ object InquiryProcedure {
     * @param f function from message and user statistics to list of evidences
     * @return
     */
-  def lift(f: (Message, UserStats) => List[Evidence]): RWS[List[Evidence]] =
-    new RWS(
+  def lift(f: (Message, UserStats) => List[Evidence]): MessageRWS[List[Evidence]] =
+    new MessageRWS(
       Future.successful(
         (msg, userStat) => {
           val xs = f(msg, userStat)
@@ -70,7 +70,7 @@ private case class Links()(implicit chatSettingsService: ChatSettingsService)
   private def linkEq(host: Host)(exclusion: Host): Boolean =
     host == exclusion
 
-  override def result: RWS[List[Evidence]] =
+  override def result: MessageRWS[List[Evidence]] =
     InquiryProcedure.lift((msg, userStat) =>
       msg.entities.toList.flatten.collect {
         case ent if ent.`type` == MessageEntityType.Url =>
@@ -85,6 +85,6 @@ private case class Links()(implicit chatSettingsService: ChatSettingsService)
   * Detection of message forwards. Forwards work like a link in telegram clients.
   */
 private object Forwards extends InquiryProcedure {
-  override def result: RWS[List[Evidence]] =
+  override def result: MessageRWS[List[Evidence]] =
     InquiryProcedure.lift((msg, userStat) => msg.forwardFromChat.map(_ => TelegramLink).toList)
 }

@@ -4,3 +4,4 @@
 /project/project/
 /src/main/resources/application.conf
 /db
+*.sc

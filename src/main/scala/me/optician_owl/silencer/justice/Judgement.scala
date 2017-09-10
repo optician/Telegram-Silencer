@@ -1,14 +1,14 @@
 package me.optician_owl.silencer.justice
 
-import me.optician_owl.silencer.RWS
+import me.optician_owl.silencer.MessageRWS
 import me.optician_owl.silencer.model._
 import cats.syntax.semigroup._
 
 import scala.concurrent.Future
 
 object Judgement {
-  def judge(xs: List[Evidence]): RWS[Verdict] =
-    new RWS(Future.successful((msg, userStat) => {
+  def judge(xs: List[Evidence]): MessageRWS[Verdict] =
+    new MessageRWS(Future.successful((msg, userStat) => {
 
       val facts = Facts(userStat, xs, msg.chat)
 

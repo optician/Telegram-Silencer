@@ -1,4 +1,4 @@
-package me.optician_owl.silencer.services
+package me.optician_owl.silencer.services.storage
 
 import com.typesafe.scalalogging.StrictLogging
 import me.optician_owl.silencer.utils.Host
@@ -15,6 +15,7 @@ class ChatSettingsService extends StrictLogging {
     "google.com",
     "google.ru",
     "yandex.ru",
+    "clickhouse.yandex",
     "habrahabr.ru",
     "*.apache.org",
     "*.jetbrains.com",
