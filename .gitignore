@@ -5,3 +5,4 @@
 /src/main/resources/application.conf
 /db
 *.sc
+*.log
