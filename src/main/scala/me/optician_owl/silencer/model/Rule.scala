@@ -20,6 +20,8 @@ class NoviceAndSpammer(noviceBoundary: Int) extends Rule {
         && chatStats.amountOfMessages <= noviceBoundary)
       Infringement(NonEmptyList(Spam, Nil))
     else Innocent
+
+    Infringement(NonEmptyList(Spam, Nil))
   }
 }
 
