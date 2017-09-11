@@ -3,4 +3,16 @@
 Your kind censor of telegram chats
 
 ## Usage
-Add 'application.conf' file to classpath with one parameter: `bot-token="token_of_your_bot"`. You can create and manage your bots via [Bot Father](https://telegram.me/botfather) or use existed instance (@why_rebecca_bot).
+Add [silencer bot](https://t.me/why_rebecca_bot) to group. 
+Every time a forbidden message appears bot send notification to administrators of a group.
+![example of simple notification](docs/example1.png)
+If bot is an administrator then notification goes with fast action buttons.
+![example with buttons](docs/example2.png)
+
+## FAQ
+1. Why does not bot remove messages automatically?
+
+At first there is a chance of false positive detection. For example when a new member of chat uses url not from whitelist and message does not violate chat rules.
+At second there is no mechanism of action rollback yet. So execution of an innocent member would be fast and silent.
+
+It'll be implemented but not so soon, because requires a lot of modification.
