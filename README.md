@@ -3,7 +3,7 @@
 Your kind censor of telegram chats
 
 ## Usage
-Add [silencer bot](t.me/why_rebecca_bot) to group. 
+Add [silencer bot](https://t.me/why_rebecca_bot) to group. 
 Every time a forbidden message appears bot send notification to administrators of a group.
 ![example of simple notification](docs/example1.png)
 If bot is an administrator then notification goes with fast action buttons.
