@@ -30,7 +30,16 @@ class ChatSettingsService extends StrictLogging {
     "rustup.rs",
     "*.rust-lang.org",
     "rust-lang.org",
-    "stackoverflow.com"
+    "stackoverflow.com",
+    "*.stackoverflow.com",
+    "serverfault.com",
+    "*.serverfault.com",
+    "superuser.com",
+    "*.superuser.com",
+    "stackexchange.com",
+    "*.stackexchange.com",
+    "android.com",
+    "*.android.com",
   ).map(url => Host(url.toLowerCase()))
 
   def getExclusionUrls(chatId: Long): List[Host] = hardCodeWhiteList
