@@ -40,6 +40,9 @@ class ChatSettingsService extends StrictLogging {
     "*.stackexchange.com",
     "android.com",
     "*.android.com",
+    "gitlab.com",
+    "*.gitlab.com",
+    "bitbucket.org"
   ).map(url => Host(url.toLowerCase()))
 
   def getExclusionUrls(chatId: Long): List[Host] = hardCodeWhiteList
