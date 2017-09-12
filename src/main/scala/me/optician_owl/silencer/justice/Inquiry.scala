@@ -60,23 +60,15 @@ object InquiryProcedure {
 private case class Links()(implicit chatSettingsService: ChatSettingsService)
     extends InquiryProcedure {
 
-  private val hostRegex = """^(?:http://|https://)?(?:www\.)?([^/]++)""".r
-  // Performance ololo
-  private def filterLinks(exclusionList: List[Host])(urlLink: UrlLink): Boolean = {
-    val hostOpt = hostRegex.findFirstMatchIn(urlLink.link.toLowerCase()).map(_.group(1))
-    hostOpt.fold(false)(host => exclusionList.exists(linkEq(Host(host))))
-  }
-
-  private def linkEq(host: Host)(exclusion: Host): Boolean =
-    host == exclusion
-
   override def result: MessageRWS[List[Evidence]] =
     InquiryProcedure.lift((msg, userStat) =>
       msg.entities.toList.flatten.collect {
         case ent if ent.`type` == MessageEntityType.Url =>
           msg.text
-            .map(x => UrlLink(x.substring(ent.offset, ent.offset + ent.length)))
-            .filterNot(filterLinks(chatSettingsService.getExclusionUrls(msg.chat.id)))
+            .flatMap(x => Host.fromUrl(x.substring(ent.offset, ent.offset + ent.length)))
+            // ToDo UrlLink
+            // ToDo use black and white lists
+            .collect { case x if x.isTelegram => TelegramLink }
         case ent if ent.`type` == MessageEntityType.Mention => Some(TelegramLink)
       }.flatten)
 }

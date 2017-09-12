@@ -16,8 +16,8 @@ class NoviceAndSpammer(noviceBoundary: Int) extends Rule {
     val chatStats = facts.userStats.chatStats.getOrElse(facts.chat.id, userChatStatsMonoid.empty)
 
     if (chatStats.joiningDttm.isDefined
-        && facts.evidences.nonEmpty
-        && chatStats.amountOfMessages <= noviceBoundary)
+        && chatStats.amountOfMessages <= noviceBoundary
+        && facts.evidences.nonEmpty)
       Infringement(NonEmptyList(Spam, Nil))
     else Innocent
   }

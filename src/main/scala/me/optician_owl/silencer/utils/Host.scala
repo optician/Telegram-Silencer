@@ -10,11 +10,27 @@ import scala.annotation.tailrec
   */
 class Host(val list: NonEmptyList[String]) extends AnyVal {
   override def toString: String = list.toList.mkString(".")
+
+  def isTelegram: Boolean = Host.telegramHosts.exists(_.linkEq(this))
+
+  def linkEq(other: Host): Boolean = other == this
+
 }
 
 object Host {
   def apply(host: String): Host =
     new Host(NonEmptyList("/", host.split('.').reverse.toList))
+
+  private val hostRegex = """^(?:http://|https://)?(?:www\.)?([^/]++)""".r
+
+  def fromUrl(url: String): Option[Host] =
+    hostRegex.findFirstMatchIn(url.toLowerCase()).map(m => Host(m.group(1)))
+
+  val telegramHosts: List[Host] =
+    List(
+      Host("t.me"),
+      Host("telegram.me")
+    )
 
   implicit val hostComparision: Ordering[Host] =
     Ordering.fromLessThan { (h1, h2) =>
