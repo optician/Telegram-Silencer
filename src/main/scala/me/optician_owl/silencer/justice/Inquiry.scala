@@ -69,6 +69,7 @@ private case class Links()(implicit chatSettingsService: ChatSettingsService)
             // ToDo UrlLink
             // ToDo use black and white lists
             .collect { case x if x.isTelegram => TelegramLink }
+        //ToDo check link is not a member of a chat
         case ent if ent.`type` == MessageEntityType.Mention => Some(TelegramLink)
       }.flatten)
 }
@@ -77,6 +78,7 @@ private case class Links()(implicit chatSettingsService: ChatSettingsService)
   * Detection of message forwards. Forwards work like a link in telegram clients.
   */
 private object Forwards extends InquiryProcedure {
+  // ToDo check that link is foreigner and not from white list
   override def result: MessageRWS[List[Evidence]] =
     InquiryProcedure.lift((msg, userStat) => msg.forwardFromChat.map(_ => TelegramLink).toList)
 }
