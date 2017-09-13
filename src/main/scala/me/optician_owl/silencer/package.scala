@@ -16,57 +16,58 @@ package object silencer {
   type CallbackRWS[A] = RWST[Future, CallbackQuery, Vector[String], UserStats, A]
 
   object RWS {
-    def traverse[F[_]: Applicative, A, B](list: List[A])(func: A => F[B]): F[List[B]] =
+    def traverse[F[_]: Applicative, A, B](list: List[A])
+                                         (func: A => F[B]): F[List[B]] =
       list.foldLeft(List.empty[B].pure[F]) { (accum, item) =>
         (accum, func(item)).mapN(_ :+ _)
       }
 
-    def failed[E, A](msg: String)(
-        implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, A] =
+    def failed[E, A](msg: String)
+                    (implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, A] =
       lift[E, A](Future.failed(new Exception(msg)))
 
-    def failedClb[A](msg: String)(
-        implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, A] =
+    def failedClb[A](msg: String)
+                    (implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, A] =
       failed[CallbackQuery, A](msg)
 
-    def failedMsg[A](msg: String)(
-        implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, A] =
+    def failedMsg[A](msg: String)
+                    (implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, A] =
       failed[Message, A](msg)
 
-    def pure[E, A](a: A)(
-        implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, A] =
+    def pure[E, A](a: A)
+                  (implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, A] =
       RWST.pure[Future, E, Vector[String], UserStats, A](a: A)
 
-    def pureClb[A](a: A)(
-        implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, A] =
+    def pureClb[A](a: A)
+                  (implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, A] =
       pure[CallbackQuery, A](a)
 
-    def pureMsg[A](a: A)(
-        implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, A] =
+    def pureMsg[A](a: A)
+                  (implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, A] =
       pure[Message, A](a)
 
-    def lift[E, A](a: Future[A])(
-        implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, A] =
+    def lift[E, A](a: Future[A])
+                  (implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, A] =
       RWST.lift[Future, E, Vector[String], UserStats, A](a: Future[A])
 
-    def liftClb[A](a: Future[A])(
-        implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, A] =
+    def liftClb[A](a: Future[A])
+                  (implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, A] =
       lift[CallbackQuery, A](a)
 
-    def liftMsg[A](a: Future[A])(
-        implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, A] =
+    def liftMsg[A](a: Future[A])
+                  (implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, A] =
       lift[Message, A](a)
 
-    def tell[E](l: String)(
-        implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, Unit] =
+    def tell[E](l: String)
+               (implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, Unit] =
       RWST.tell[Future, E, Vector[String], UserStats](Vector(l))
 
-    def tellClb(l: String)(implicit ex: ExecutionContext)
-      : RWST[Future, CallbackQuery, Vector[String], UserStats, Unit] =
+    def tellClb(l: String)
+               (implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, Unit] =
       tell[CallbackQuery](l)
 
-    def tellMsg(l: String)(
-        implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, Unit] =
+    def tellMsg(l: String)
+               (implicit ex: ExecutionContext): RWST[Future, Message, Vector[String], UserStats, Unit] =
       tell[Message](l)
 
     def ask[E](implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, E] =
