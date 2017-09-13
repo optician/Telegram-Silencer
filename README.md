@@ -16,3 +16,6 @@ At first there is a chance of false positive detection. For example when a new m
 At second there is no mechanism of action rollback yet. So execution of an innocent member would be fast and silent.
 
 It'll be implemented but not so soon, because requires a lot of modification.
+
+## Details
+Look into [CONTRIBUTING](./CONTRIBUTING.md)
