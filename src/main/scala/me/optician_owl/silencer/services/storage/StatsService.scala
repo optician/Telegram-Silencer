@@ -95,4 +95,8 @@ class StatsService extends StrictLogging {
     userStats
   }
 
+  def dropStats(userId: Long): Unit = {
+    userStatsStore.remove(BigInt(userId).toByteArray)
+  }
+
 }

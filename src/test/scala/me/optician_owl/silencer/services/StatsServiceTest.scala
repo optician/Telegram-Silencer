@@ -40,4 +40,13 @@ class StatsServiceTest extends FlatSpec with Matchers {
     service.stats(44L) should be(usWithGuilt)
     service.stats(45L) should be(newcommer)
   }
+
+  it should "drop UserStats" in {
+    val userId = 55L
+    service.stats(userId) should be(UserStats(ZonedDateTime.now, 0, Map.empty))
+    service.updateStats(userId, us)
+    service.stats(userId) should be(us)
+    service.dropStats(userId)
+    service.stats(userId) should be(UserStats(ZonedDateTime.now, 0, Map.empty))
+  }
 }
