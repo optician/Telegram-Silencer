@@ -20,5 +20,3 @@ object Silencer {
     safeBot.run()
   }
 }
-
-// ToDo Add method for clearing user stats - debugging purpose
