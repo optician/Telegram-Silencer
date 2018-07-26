@@ -33,3 +33,6 @@ sealed trait Guilt
 case object Spam extends Guilt {
   override def toString: String = "Spam"
 }
+case object AnnoyingSpam extends Guilt {
+  override def toString: String = "Annoying Spam"
+}

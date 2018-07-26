@@ -9,6 +9,10 @@ object TelegramLink extends Evidence {
   override def toString: String = "Telegram Link"
 }
 
+object ChineseCrutch extends Evidence {
+  override def toString: String = "╋VX,QQ（同号）：253239090"
+}
+
 // Union type for poor
 //case class TelegramLink[T](linkTo: Link[T]) extends Evidence {
 //  override def toString: String = "Telegram Link"

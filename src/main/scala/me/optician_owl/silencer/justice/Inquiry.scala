@@ -16,7 +16,7 @@ class Inquiry(chatSettingsService: ChatSettingsService) {
   implicit private val settings: ChatSettingsService = chatSettingsService
 
   def searchEvidences(implicit ex: ExecutionContext): MessageRWS[List[Evidence]] = {
-    val procedures = List(Links(), Forwards)
+    val procedures = List(Links(), Forwards, ChineseNameSpam)
     for {
       evs <- RWS.traverse(procedures)(_.result).map(_.flatten)
       _   <- RWST.tell[Future, Message, Vector[String], UserStats](Vector(s"[evidences] $evs"))
@@ -80,5 +80,16 @@ private case class Links()(implicit chatSettingsService: ChatSettingsService)
 private object Forwards extends InquiryProcedure {
   // ToDo check that link is foreigner and not from white list
   override def result: MessageRWS[List[Evidence]] =
-    InquiryProcedure.lift((msg, userStat) => msg.forwardFromChat.map(_ => TelegramLink).toList)
+    InquiryProcedure.lift((msg, _) => msg.forwardFromChat.map(_ => TelegramLink).toList)
+}
+
+//╋VX,QQ（同号）：253239090 专业工作室推广拉人【电报群拉国内外有无username都可拉、指定群拉人】【机器人定制】【社群代运营】【twitter关注、转发】【facebook关注、转发】【youtube点赞、评论】【出售成品电报账号】 （欢迎社群运营者、项目方、交易所洽谈合作）优质空投分享QQ群473157472 本工作室全网最低价、服务最好、活人质量最高 招收代理 We can ADD 1000+ 10000+ or ANY NUMBER REAL and ACTIVE MEMBERS for your TELEGRAM GROUPS-LEAVE NO JOIN ALERTS,QUALITY and QUANTITY GUARANTEED,DEMO AVAILABLE.We also provide READY-MADE TELEGRAM ACCOUNTS and BROADCASTING SERVICE now you read.(To get our sevic joined the group
+private object ChineseNameSpam extends InquiryProcedure {
+  val namePart = "╋VX,QQ（同号）"
+  override def result: MessageRWS[List[Evidence]] =
+    InquiryProcedure.lift((msg, _) =>
+      msg.newChatMembers.toList.flatten.collect {
+        case x if (x.firstName.length > 100 || x.lastName.exists(_.length > 100)) && (x.firstName.startsWith(namePart) || x.lastName.exists(_.startsWith(namePart))) =>
+          ChineseCrutch
+    })
 }

@@ -18,11 +18,17 @@ class NoviceAndSpammer(noviceBoundary: Int) extends Rule {
     if (chatStats.joiningDttm.isDefined
         && chatStats.amountOfMessages <= noviceBoundary
         && facts.evidences.nonEmpty)
-      Infringement(NonEmptyList(Spam, Nil))
+      Infringement(NonEmptyList.one(Spam))
     else Innocent
   }
 }
 
+object ChineseSpammer extends Rule {
+  override def apply(facts: Facts): Verdict =
+    if (facts.evidences.exists(_ == ChineseCrutch)) Infringement(NonEmptyList.one(AnnoyingSpam))
+    else Innocent
+}
+
 object Rule {
-  val codex: List[Rule] = List(new NoviceAndSpammer(3))
+  val codex: List[Rule] = List(new NoviceAndSpammer(3), ChineseSpammer)
 }

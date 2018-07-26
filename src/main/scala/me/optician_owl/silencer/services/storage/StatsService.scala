@@ -7,7 +7,7 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection._
 import com.typesafe.scalalogging.StrictLogging
 import me.optician_owl.protobuf.UserStatsScheme.{GuiltPair, UserChatStatsScheme, UserStatsScheme, Guilt => ProtoGuilt, ZonedDateTime => ProtoZDT}
-import me.optician_owl.silencer.model.{Guilt, Spam, UserChatStats, UserStats}
+import me.optician_owl.silencer.model._
 import net.openhft.chronicle.map.{ChronicleMap, ChronicleMapBuilder}
 
 import scala.reflect.io.{File, Path}
@@ -22,6 +22,7 @@ class StatsService extends StrictLogging {
 
   private val g2pg: Guilt => ProtoGuilt = {
     case Spam => ProtoGuilt.SPAM
+    case AnnoyingSpam => ProtoGuilt.SPAM
   }
 
   implicit private val guilt2guilt: Bijection[Guilt, ProtoGuilt] =

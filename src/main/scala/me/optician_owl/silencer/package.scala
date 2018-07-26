@@ -3,8 +3,6 @@ package me.optician_owl
 import cats.Applicative
 import cats.data.RWST
 import cats.syntax.all._
-import cats.instances.vector._
-import cats.instances.future._
 import info.mukel.telegrambot4s.models.{CallbackQuery, Message}
 import me.optician_owl.silencer.model.UserStats
 
@@ -48,7 +46,7 @@ package object silencer {
 
     def lift[E, A](a: Future[A])
                   (implicit ex: ExecutionContext): RWST[Future, E, Vector[String], UserStats, A] =
-      RWST.lift[Future, E, Vector[String], UserStats, A](a: Future[A])
+      RWST.liftF[Future, E, Vector[String], UserStats, A](a: Future[A])
 
     def liftClb[A](a: Future[A])
                   (implicit ex: ExecutionContext): RWST[Future, CallbackQuery, Vector[String], UserStats, A] =

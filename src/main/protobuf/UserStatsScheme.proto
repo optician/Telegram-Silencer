@@ -28,4 +28,5 @@ message ZonedDateTime {
 
 enum Guilt {
     SPAM = 0;
+    ANNOYING_SPAM = 1;
 }

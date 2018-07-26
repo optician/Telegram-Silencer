@@ -1,13 +1,12 @@
 package me.optician_owl.silencer.justice
 
-import me.optician_owl.silencer._
-import me.optician_owl.silencer.model._
-import cats.syntax.all._
-import cats.instances.vector._
 import cats.instances.future._
-import cats.data.ReaderWriterStateT._
+import cats.instances.vector._
+import cats.syntax.all._
 import info.mukel.telegrambot4s.methods._
 import info.mukel.telegrambot4s.models._
+import me.optician_owl.silencer._
+import me.optician_owl.silencer.model._
 import me.optician_owl.silencer.services.BotService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,6 +47,16 @@ class Execution(botService: BotService)(implicit ex: ExecutionContext) {
     }))
 
   def punish(verdict: Verdict): MessageRWS[Verdict] = {
+    verdict match {
+      case Innocent => verdict.pure[MessageRWS]
+      case Infringement(xs) if xs.exists(_ == AnnoyingSpam) =>
+        new MessageRWS(Future.successful((msg: Message, userStat: UserStats) => {
+          botService.request(DeleteMessage(msg.chat.id, msg.messageId))
+          botService.request(RestrictChatMember(msg.chat.id, msg.from.get.id))
+          Future.successful((Vector(s"Annoying Spam was deleted [$msg]"), userStat, verdict))
+        }))
+      case _ => notifyCourt(verdict)
+    }
     for {
       v <- verdict.pure[MessageRWS]
       _ <- RWS.tellMsg("punishments aren't yet implemented")
